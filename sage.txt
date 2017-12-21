@@ -1,0 +1,455 @@
+
+# before you try the original code you may try the more easy instances bellow.
+A= matrix(GF(2),[[0,1,1,1,0,1,1],[1,1,1,0,1,1,0],[0,0,0,0,1,0,1],[1,0,0,0,1,0,1],[1,1,1,1,1,1,0],[1,0,0,0,0,1,1]]) 
+       	
+A 
+       	
+[0 1 1 1 0 1 1]
+[1 1 1 0 1 1 0]
+[0 0 0 0 1 0 1]
+[1 0 0 0 1 0 1]
+[1 1 1 1 1 1 0]
+[1 0 0 0 0 1 1]
+# 1. Save the matrix A in a text file
+# (some care is needed since in practice the real instance has too many rows and colums
+# and you will not manage to print the matrix. So you must save the matrix without printing A).
+# 2. Apply Gausian algortithm over GF(2) in C (using for intance LAPACK)
+# 3. Save the result (without printing in a text file
+# 4. The final step, insert the matrix (from step 3) in way that SAGE can understands (i can help in this step) 
+       	
+#In this simple example after applying Gauss you must get 
+A.delete_columns([6]).augment(vector([1,0,1,1,0,1])).echelon_form() 
+       	
+[1 0 0 0 0 0 0]
+[0 1 1 0 0 0 0]
+[0 0 0 1 0 0 0]
+[0 0 0 0 1 0 1]
+[0 0 0 0 0 1 1]
+[0 0 0 0 0 0 0]
+reset() 
+       	
+### Produce the initial variables for any variant ###
+from itertools import product
+import itertools
+import time
+
+def produce_initial_variables(n,nb): # n  : number of rounds, this affects the keys kij 0<=i<=n-1, 0<=j<=nb-1
+                                     # nb : number of variables   
+    
+    
+    varl1 = [ c1 + str(p) for c1 in 'xyz' for p in range ( nb )]
+    varl2 = [ c1 + str(p) + str(q) for c1 in 'k' for (p,q) in  list(product(range(n+1),range(nb)))]
+    varl3=[]
+    if n>1:
+        varl3 = [ c1 + str(p) + str(q) for c1 in 'z' for (p,q) in  list(product(range(n-1),range(nb)))]  
+    varl = varl1+varl2+varl3
+    
+    return varl
+
+### Chose number of Rounds
+
+n = 8
+
+# * define the set of polynomials over GF(p) * #
+# nb is the number of variables in the system
+
+nb = 4 
+       	
+# this is for round n = 8 and nb as usual 4.
+P = BooleanPolynomialRing ( names = produce_initial_variables(n,nb), order='deglex' )   
+P.inject_variables()
+I = [k00*z00 + k00*z02 + k00*z03 + k00 + k01*z01 + k01*z02 + k01*z03 + k02*z00 + k02*z01 + k02*z02 + k03*z00 + k03*z01 + k03*z03 + k03 + z00 + z01 + z02 + z03 + 1,
+ k00*z00 + k00*z01 + k00*z03 + k00 + k01*z00 + k01*z01 + k01 + k02*z00 + k02*z03 + k03*z02 + k03*z03 + k03 + z00 + z02 + z03 + 1,
+ k10*z10 + k10*z12 + k10*z13 + k10 + k11*z11 + k11*z12 + k11*z13 + k12*z10 + k12*z11 + k12*z12 + k13*z10 + k13*z11 + k13*z13 + k13 + z00*z10 + z00*z12 + z00*z13 + z00 + z01*z11 + z01*z12 + z01*z13 + z02*z10 + z02*z11 + z02*z12 + z03*z10 + z03*z11 + z03*z13 + z03 + 1,
+ k10*z10 + k10*z11 + k10*z13 + k10 + k11*z10 + k11*z11 + k11 + k12*z10 + k12*z13 + k13*z12 + k13*z13 + k13 + z00*z10 + z00*z11 + z00*z13 + z00 + z01*z10 + z01*z11 + z01 + z02*z10 + z02*z13 + z03*z12 + z03*z13 + z03,
+ k20*z20 + k20*z22 + k20*z23 + k20 + k21*z21 + k21*z22 + k21*z23 + k22*z20 + k22*z21 + k22*z22 + k23*z20 + k23*z21 + k23*z23 + k23 + z10*z20 + z10*z22 + z10*z23 + z10 + z11*z21 + z11*z22 + z11*z23 + z12*z20 + z12*z21 + z12*z22 + z13*z20 + z13*z21 + z13*z23 + z13 + 1,
+ k20*z20 + k20*z21 + k20*z23 + k20 + k21*z20 + k21*z21 + k21 + k22*z20 + k22*z23 + k23*z22 + k23*z23 + k23 + z10*z20 + z10*z21 + z10*z23 + z10 + z11*z20 + z11*z21 + z11 + z12*z20 + z12*z23 + z13*z22 + z13*z23 + z13,
+ k30*z30 + k30*z32 + k30*z33 + k30 + k31*z31 + k31*z32 + k31*z33 + k32*z30 + k32*z31 + k32*z32 + k33*z30 + k33*z31 + k33*z33 + k33 + z20*z30 + z20*z32 + z20*z33 + z20 + z21*z31 + z21*z32 + z21*z33 + z22*z30 + z22*z31 + z22*z32 + z23*z30 + z23*z31 + z23*z33 + z23 + 1,
+ k30*z30 + k30*z31 + k30*z33 + k30 + k31*z30 + k31*z31 + k31 + k32*z30 + k32*z33 + k33*z32 + k33*z33 + k33 + z20*z30 + z20*z31 + z20*z33 + z20 + z21*z30 + z21*z31 + z21 + z22*z30 + z22*z33 + z23*z32 + z23*z33 + z23,
+ k40*z40 + k40*z42 + k40*z43 + k40 + k41*z41 + k41*z42 + k41*z43 + k42*z40 + k42*z41 + k42*z42 + k43*z40 + k43*z41 + k43*z43 + k43 + z30*z40 + z30*z42 + z30*z43 + z30 + z31*z41 + z31*z42 + z31*z43 + z32*z40 + z32*z41 + z32*z42 + z33*z40 + z33*z41 + z33*z43 + z33 + 1,
+ k40*z40 + k40*z41 + k40*z43 + k40 + k41*z40 + k41*z41 + k41 + k42*z40 + k42*z43 + k43*z42 + k43*z43 + k43 + z30*z40 + z30*z41 + z30*z43 + z30 + z31*z40 + z31*z41 + z31 + z32*z40 + z32*z43 + z33*z42 + z33*z43 + z33,
+ k50*z50 + k50*z52 + k50*z53 + k50 + k51*z51 + k51*z52 + k51*z53 + k52*z50 + k52*z51 + k52*z52 + k53*z50 + k53*z51 + k53*z53 + k53 + z40*z50 + z40*z52 + z40*z53 + z40 + z41*z51 + z41*z52 + z41*z53 + z42*z50 + z42*z51 + z42*z52 + z43*z50 + z43*z51 + z43*z53 + z43 + 1,
+ k50*z50 + k50*z51 + k50*z53 + k50 + k51*z50 + k51*z51 + k51 + k52*z50 + k52*z53 + k53*z52 + k53*z53 + k53 + z40*z50 + z40*z51 + z40*z53 + z40 + z41*z50 + z41*z51 + z41 + z42*z50 + z42*z53 + z43*z52 + z43*z53 + z43,
+ k60*z60 + k60*z62 + k60*z63 + k60 + k61*z61 + k61*z62 + k61*z63 + k62*z60 + k62*z61 + k62*z62 + k63*z60 + k63*z61 + k63*z63 + k63 + z50*z60 + z50*z62 + z50*z63 + z50 + z51*z61 + z51*z62 + z51*z63 + z52*z60 + z52*z61 + z52*z62 + z53*z60 + z53*z61 + z53*z63 + z53 + 1,
+ k60*z60 + k60*z61 + k60*z63 + k60 + k61*z60 + k61*z61 + k61 + k62*z60 + k62*z63 + k63*z62 + k63*z63 + k63 + z50*z60 + z50*z61 + z50*z63 + z50 + z51*z60 + z51*z61 + z51 + z52*z60 + z52*z63 + z53*z62 + z53*z63 + z53,
+ k70*k80 + k70*k82 + k70*k83 + k70 + k71*k81 + k71*k82 + k71*k83 + k71 + k72*k80 + k72*k81 + k72*k82 + k72 + k73*k80 + k73*k81 + k73*k83 + k73 + k80*z60 + k80*z62 + k80*z63 + k81*z61 + k81*z62 + k81*z63 + k82*z60 + k82*z61 + k82*z62 + k83*z60 + k83*z61 + k83*z63 + z60 + z61 + z62 + z63 + 1,
+ k70*k80 + k70*k81 + k70*k83 + k70 + k71*k80 + k71*k81 + k72*k80 + k72*k83 + k73*k82 + k73*k83 + k80*z60 + k80*z61 + k80*z62 + k81*z60 + k81*z61 + k82*z63 + k83*z60 + k83*z62 + k83*z63 + z60,
+ k00*z00 + k00*z02 + k00*z03 + k01*z00 + k01*z01 + k01*z02 + k02*z00 + k02*z01 + k02 + k03*z02 + k03*z03 + k03 + z00 + z02,
+ k00*z00 + k00*z01 + k00*z03 + k00 + k01*z00 + k01*z03 + k01 + k02*z03 + k03*z00 + k03*z02 + k03 + z00 + z01 + z02 + z03 + 1,
+ k10*z10 + k10*z12 + k10*z13 + k11*z10 + k11*z11 + k11*z12 + k12*z10 + k12*z11 + k12 + k13*z12 + k13*z13 + k13 + z00*z10 + z00*z12 + z00*z13 + z01*z10 + z01*z11 + z01*z12 + z02*z10 + z02*z11 + z02 + z03*z12 + z03*z13 + z03,
+ k10*z10 + k10*z11 + k10*z13 + k10 + k11*z10 + k11*z13 + k11 + k12*z13 + k13*z10 + k13*z12 + k13 + z00*z10 + z00*z11 + z00*z13 + z00 + z01*z10 + z01*z13 + z01 + z02*z13 + z03*z10 + z03*z12 + z03,
+ k20*z20 + k20*z22 + k20*z23 + k21*z20 + k21*z21 + k21*z22 + k22*z20 + k22*z21 + k22 + k23*z22 + k23*z23 + k23 + z10*z20 + z10*z22 + z10*z23 + z11*z20 + z11*z21 + z11*z22 + z12*z20 + z12*z21 + z12 + z13*z22 + z13*z23 + z13,
+ k20*z20 + k20*z21 + k20*z23 + k20 + k21*z20 + k21*z23 + k21 + k22*z23 + k23*z20 + k23*z22 + k23 + z10*z20 + z10*z21 + z10*z23 + z10 + z11*z20 + z11*z23 + z11 + z12*z23 + z13*z20 + z13*z22 + z13,
+ k30*z30 + k30*z32 + k30*z33 + k31*z30 + k31*z31 + k31*z32 + k32*z30 + k32*z31 + k32 + k33*z32 + k33*z33 + k33 + z20*z30 + z20*z32 + z20*z33 + z21*z30 + z21*z31 + z21*z32 + z22*z30 + z22*z31 + z22 + z23*z32 + z23*z33 + z23,
+ k30*z30 + k30*z31 + k30*z33 + k30 + k31*z30 + k31*z33 + k31 + k32*z33 + k33*z30 + k33*z32 + k33 + z20*z30 + z20*z31 + z20*z33 + z20 + z21*z30 + z21*z33 + z21 + z22*z33 + z23*z30 + z23*z32 + z23,
+ k40*z40 + k40*z42 + k40*z43 + k41*z40 + k41*z41 + k41*z42 + k42*z40 + k42*z41 + k42 + k43*z42 + k43*z43 + k43 + z30*z40 + z30*z42 + z30*z43 + z31*z40 + z31*z41 + z31*z42 + z32*z40 + z32*z41 + z32 + z33*z42 + z33*z43 + z33,
+ k40*z40 + k40*z41 + k40*z43 + k40 + k41*z40 + k41*z43 + k41 + k42*z43 + k43*z40 + k43*z42 + k43 + z30*z40 + z30*z41 + z30*z43 + z30 + z31*z40 + z31*z43 + z31 + z32*z43 + z33*z40 + z33*z42 + z33,
+ k50*z50 + k50*z52 + k50*z53 + k51*z50 + k51*z51 + k51*z52 + k52*z50 + k52*z51 + k52 + k53*z52 + k53*z53 + k53 + z40*z50 + z40*z52 + z40*z53 + z41*z50 + z41*z51 + z41*z52 + z42*z50 + z42*z51 + z42 + z43*z52 + z43*z53 + z43,
+ k50*z50 + k50*z51 + k50*z53 + k50 + k51*z50 + k51*z53 + k51 + k52*z53 + k53*z50 + k53*z52 + k53 + z40*z50 + z40*z51 + z40*z53 + z40 + z41*z50 + z41*z53 + z41 + z42*z53 + z43*z50 + z43*z52 + z43,
+ k60*z60 + k60*z62 + k60*z63 + k61*z60 + k61*z61 + k61*z62 + k62*z60 + k62*z61 + k62 + k63*z62 + k63*z63 + k63 + z50*z60 + z50*z62 + z50*z63 + z51*z60 + z51*z61 + z51*z62 + z52*z60 + z52*z61 + z52 + z53*z62 + z53*z63 + z53,
+ k60*z60 + k60*z61 + k60*z63 + k60 + k61*z60 + k61*z63 + k61 + k62*z63 + k63*z60 + k63*z62 + k63 + z50*z60 + z50*z61 + z50*z63 + z50 + z51*z60 + z51*z63 + z51 + z52*z63 + z53*z60 + z53*z62 + z53,
+ k70*k80 + k70*k82 + k70*k83 + k71*k80 + k71*k81 + k71*k82 + k71 + k72*k80 + k72*k81 + k73*k82 + k73*k83 + k80*z60 + k80*z61 + k80*z62 + k81*z61 + k81*z62 + k82*z60 + k82*z61 + k82*z63 + k83*z60 + k83*z63 + z61,
+ k70*k80 + k70*k81 + k70*k83 + k70 + k71*k80 + k71*k83 + k71 + k72*k83 + k72 + k73*k80 + k73*k82 + k80*z60 + k80*z61 + k80*z63 + k81*z60 + k82*z63 + k83*z60 + k83*z61 + k83*z62 + z60 + z61 + z62,
+ k00*z01 + k00*z03 + k00 + k01*z01 + k01*z02 + k01*z03 + k02*z00 + k02*z02 + k02 + k03*z00 + k03*z01 + k03*z02 + z00 + z01 + z03 + 1,
+ k00*z00 + k00*z01 + k00*z02 + k01*z02 + k01 + k02*z00 + k02*z01 + k02*z03 + k02 + k03*z01 + k03 + z00,
+ k10*z11 + k10*z13 + k10 + k11*z11 + k11*z12 + k11*z13 + k12*z10 + k12*z12 + k12 + k13*z10 + k13*z11 + k13*z12 + z00*z11 + z00*z13 + z00 + z01*z11 + z01*z12 + z01*z13 + z02*z10 + z02*z12 + z02 + z03*z10 + z03*z11 + z03*z12 + z10 + z12 + z13 + 1,
+ k10*z10 + k10*z11 + k10*z12 + k11*z12 + k11 + k12*z10 + k12*z11 + k12*z13 + k12 + k13*z11 + k13 + z00*z10 + z00*z11 + z00*z12 + z01*z12 + z01 + z02*z10 + z02*z11 + z02*z13 + z02 + z03*z11 + z03 + z10 + z11 + z13 + 1,
+ k20*z21 + k20*z23 + k20 + k21*z21 + k21*z22 + k21*z23 + k22*z20 + k22*z22 + k22 + k23*z20 + k23*z21 + k23*z22 + z10*z21 + z10*z23 + z10 + z11*z21 + z11*z22 + z11*z23 + z12*z20 + z12*z22 + z12 + z13*z20 + z13*z21 + z13*z22 + z20 + z22 + z23 + 1,
+ k20*z20 + k20*z21 + k20*z22 + k21*z22 + k21 + k22*z20 + k22*z21 + k22*z23 + k22 + k23*z21 + k23 + z10*z20 + z10*z21 + z10*z22 + z11*z22 + z11 + z12*z20 + z12*z21 + z12*z23 + z12 + z13*z21 + z13 + z20 + z21 + z23 + 1,
+ k30*z31 + k30*z33 + k30 + k31*z31 + k31*z32 + k31*z33 + k32*z30 + k32*z32 + k32 + k33*z30 + k33*z31 + k33*z32 + z20*z31 + z20*z33 + z20 + z21*z31 + z21*z32 + z21*z33 + z22*z30 + z22*z32 + z22 + z23*z30 + z23*z31 + z23*z32 + z30 + z32 + z33 + 1,
+ k30*z30 + k30*z31 + k30*z32 + k31*z32 + k31 + k32*z30 + k32*z31 + k32*z33 + k32 + k33*z31 + k33 + z20*z30 + z20*z31 + z20*z32 + z21*z32 + z21 + z22*z30 + z22*z31 + z22*z33 + z22 + z23*z31 + z23 + z30 + z31 + z33 + 1,
+ k40*z41 + k40*z43 + k40 + k41*z41 + k41*z42 + k41*z43 + k42*z40 + k42*z42 + k42 + k43*z40 + k43*z41 + k43*z42 + z30*z41 + z30*z43 + z30 + z31*z41 + z31*z42 + z31*z43 + z32*z40 + z32*z42 + z32 + z33*z40 + z33*z41 + z33*z42 + z40 + z42 + z43 + 1,
+ k40*z40 + k40*z41 + k40*z42 + k41*z42 + k41 + k42*z40 + k42*z41 + k42*z43 + k42 + k43*z41 + k43 + z30*z40 + z30*z41 + z30*z42 + z31*z42 + z31 + z32*z40 + z32*z41 + z32*z43 + z32 + z33*z41 + z33 + z40 + z41 + z43 + 1,
+ k50*z51 + k50*z53 + k50 + k51*z51 + k51*z52 + k51*z53 + k52*z50 + k52*z52 + k52 + k53*z50 + k53*z51 + k53*z52 + z40*z51 + z40*z53 + z40 + z41*z51 + z41*z52 + z41*z53 + z42*z50 + z42*z52 + z42 + z43*z50 + z43*z51 + z43*z52 + z50 + z52 + z53 + 1,
+ k50*z50 + k50*z51 + k50*z52 + k51*z52 + k51 + k52*z50 + k52*z51 + k52*z53 + k52 + k53*z51 + k53 + z40*z50 + z40*z51 + z40*z52 + z41*z52 + z41 + z42*z50 + z42*z51 + z42*z53 + z42 + z43*z51 + z43 + z50 + z51 + z53 + 1,
+ k60*z61 + k60*z63 + k60 + k61*z61 + k61*z62 + k61*z63 + k62*z60 + k62*z62 + k62 + k63*z60 + k63*z61 + k63*z62 + z50*z61 + z50*z63 + z50 + z51*z61 + z51*z62 + z51*z63 + z52*z60 + z52*z62 + z52 + z53*z60 + z53*z61 + z53*z62 + z60 + z62 + z63 + 1,
+ k60*z60 + k60*z61 + k60*z62 + k61*z62 + k61 + k62*z60 + k62*z61 + k62*z63 + k62 + k63*z61 + k63 + z50*z60 + z50*z61 + z50*z62 + z51*z62 + z51 + z52*z60 + z52*z61 + z52*z63 + z52 + z53*z61 + z53 + z60 + z61 + z63 + 1,
+ k70*k81 + k70*k83 + k71*k81 + k71*k82 + k71*k83 + k71 + k72*k80 + k72*k82 + k73*k80 + k73*k81 + k73*k82 + k73 + k80*z62 + k80*z63 + k80 + k81*z60 + k81*z61 + k81*z63 + k82*z61 + k82*z62 + k82*z63 + k82 + k83*z60 + k83*z61 + k83 + z61 + z63 + 1,
+ k70*k80 + k70*k81 + k70*k82 + k70 + k71*k82 + k71 + k72*k80 + k72*k81 + k72*k83 + k72 + k73*k81 + k73 + k80*z60 + k80*z62 + k80 + k81*z60 + k81*z62 + k81*z63 + k81 + k82*z60 + k82*z61 + k83*z62 + k83 + z60 + z61 + z62 + z63 + 1,
+ k00*z00 + k00*z01 + k00*z02 + k01*z00 + k01*z01 + k01*z03 + k01 + k02*z00 + k02*z01 + k02 + k03*z00 + k03*z03 + z01 + z02,
+ k00*z02 + k00*z03 + k00 + k01*z03 + k02*z01 + k02*z03 + k02 + k03*z00 + k03*z02 + k03 + z00 + z01 + z03 + 1,
+ k10*z10 + k10*z11 + k10*z12 + k11*z10 + k11*z11 + k11*z13 + k11 + k12*z10 + k12*z11 + k12 + k13*z10 + k13*z13 + z00*z10 + z00*z11 + z00*z12 + z01*z10 + z01*z11 + z01*z13 + z01 + z02*z10 + z02*z11 + z02 + z03*z10 + z03*z13,
+ k10*z12 + k10*z13 + k10 + k11*z13 + k12*z11 + k12*z13 + k12 + k13*z10 + k13*z12 + k13 + z00*z12 + z00*z13 + z00 + z01*z13 + z02*z11 + z02*z13 + z02 + z03*z10 + z03*z12 + z03,
+ k20*z20 + k20*z21 + k20*z22 + k21*z20 + k21*z21 + k21*z23 + k21 + k22*z20 + k22*z21 + k22 + k23*z20 + k23*z23 + z10*z20 + z10*z21 + z10*z22 + z11*z20 + z11*z21 + z11*z23 + z11 + z12*z20 + z12*z21 + z12 + z13*z20 + z13*z23,
+ k20*z22 + k20*z23 + k20 + k21*z23 + k22*z21 + k22*z23 + k22 + k23*z20 + k23*z22 + k23 + z10*z22 + z10*z23 + z10 + z11*z23 + z12*z21 + z12*z23 + z12 + z13*z20 + z13*z22 + z13,
+ k30*z30 + k30*z31 + k30*z32 + k31*z30 + k31*z31 + k31*z33 + k31 + k32*z30 + k32*z31 + k32 + k33*z30 + k33*z33 + z20*z30 + z20*z31 + z20*z32 + z21*z30 + z21*z31 + z21*z33 + z21 + z22*z30 + z22*z31 + z22 + z23*z30 + z23*z33,
+ k30*z32 + k30*z33 + k30 + k31*z33 + k32*z31 + k32*z33 + k32 + k33*z30 + k33*z32 + k33 + z20*z32 + z20*z33 + z20 + z21*z33 + z22*z31 + z22*z33 + z22 + z23*z30 + z23*z32 + z23,
+ k40*z40 + k40*z41 + k40*z42 + k41*z40 + k41*z41 + k41*z43 + k41 + k42*z40 + k42*z41 + k42 + k43*z40 + k43*z43 + z30*z40 + z30*z41 + z30*z42 + z31*z40 + z31*z41 + z31*z43 + z31 + z32*z40 + z32*z41 + z32 + z33*z40 + z33*z43,
+ k40*z42 + k40*z43 + k40 + k41*z43 + k42*z41 + k42*z43 + k42 + k43*z40 + k43*z42 + k43 + z30*z42 + z30*z43 + z30 + z31*z43 + z32*z41 + z32*z43 + z32 + z33*z40 + z33*z42 + z33,
+ k50*z50 + k50*z51 + k50*z52 + k51*z50 + k51*z51 + k51*z53 + k51 + k52*z50 + k52*z51 + k52 + k53*z50 + k53*z53 + z40*z50 + z40*z51 + z40*z52 + z41*z50 + z41*z51 + z41*z53 + z41 + z42*z50 + z42*z51 + z42 + z43*z50 + z43*z53,
+ k50*z52 + k50*z53 + k50 + k51*z53 + k52*z51 + k52*z53 + k52 + k53*z50 + k53*z52 + k53 + z40*z52 + z40*z53 + z40 + z41*z53 + z42*z51 + z42*z53 + z42 + z43*z50 + z43*z52 + z43,
+ k60*z60 + k60*z61 + k60*z62 + k61*z60 + k61*z61 + k61*z63 + k61 + k62*z60 + k62*z61 + k62 + k63*z60 + k63*z63 + z50*z60 + z50*z61 + z50*z62 + z51*z60 + z51*z61 + z51*z63 + z51 + z52*z60 + z52*z61 + z52 + z53*z60 + z53*z63,
+ k60*z62 + k60*z63 + k60 + k61*z63 + k62*z61 + k62*z63 + k62 + k63*z60 + k63*z62 + k63 + z50*z62 + z50*z63 + z50 + z51*z63 + z52*z61 + z52*z63 + z52 + z53*z60 + z53*z62 + z53,
+ k70*k80 + k70*k81 + k70*k82 + k70 + k71*k80 + k71*k81 + k71*k83 + k71 + k72*k80 + k72*k81 + k73*k80 + k73*k83 + k80*z60 + k80*z61 + k80*z62 + k80*z63 + k81*z60 + k81*z61 + k81*z62 + k82*z60 + k83*z61 + k83*z63 + z60 + z61,
+ k70*k82 + k70*k83 + k71*k83 + k71 + k72*k81 + k72*k83 + k73*k80 + k73*k82 + k80*z63 + k81*z62 + k82*z60 + k82*z63 + k83*z60 + k83*z61 + k83*z62 + z61,
+ k00*k10 + k00*k12 + k00*k13 + k01*k11 + k01*k12 + k01*k13 + k02*k10 + k02*k11 + k02*k12 + k02 + k03*k10 + k03*k11 + k03*k13 + 1,
+ k00*k10 + k00*k11 + k00*k13 + k01*k10 + k01*k11 + k02*k10 + k02*k13 + k02 + k03*k12 + k03*k13 + k03,
+ k00*k10 + k00*k11 + k00*k12 + k00 + k01*k10 + k01*k11 + k01*k13 + k02*k10 + k02*k11 + k03*k10 + k03*k13 + k03,
+ k00*k11 + k00*k12 + k00*k13 + k01*k10 + k01*k11 + k01*k12 + k01 + k02*k10 + k02*k11 + k02*k13 + k03*k10 + k03*k11,
+ k10*k20 + k10*k22 + k10*k23 + k10 + k11*k21 + k11*k22 + k11*k23 + k11 + k12*k20 + k12*k21 + k12*k22 + k12 + k13*k20 + k13*k21 + k13*k23 + 1,
+ k10*k20 + k10*k21 + k10*k23 + k11*k20 + k11*k21 + k12*k20 + k12*k23 + k13*k22 + k13*k23 + k13,
+ k10*k20 + k10*k21 + k10*k22 + k10 + k11*k20 + k11*k21 + k11*k23 + k12*k20 + k12*k21 + k13*k20 + k13*k23,
+ k10*k21 + k10*k22 + k10*k23 + k10 + k11*k20 + k11*k21 + k11*k22 + k11 + k12*k20 + k12*k21 + k12*k23 + k13*k20 + k13*k21,
+ k20*k30 + k20*k32 + k20*k33 + k21*k31 + k21*k32 + k21*k33 + k21 + k22*k30 + k22*k31 + k22*k32 + k22 + k23*k30 + k23*k31 + k23*k33 + k23 + 1,
+ k20*k30 + k20*k31 + k20*k33 + k20 + k21*k30 + k21*k31 + k21 + k22*k30 + k22*k33 + k23*k32 + k23*k33,
+ k20*k30 + k20*k31 + k20*k32 + k20 + k21*k30 + k21*k31 + k21*k33 + k21 + k22*k30 + k22*k31 + k22 + k23*k30 + k23*k33,
+ k20*k31 + k20*k32 + k20*k33 + k20 + k21*k30 + k21*k31 + k21*k32 + k21 + k22*k30 + k22*k31 + k22*k33 + k22 + k23*k30 + k23*k31 + k23,
+ k30*k40 + k30*k42 + k30*k43 + k31*k41 + k31*k42 + k31*k43 + k31 + k32*k40 + k32*k41 + k32*k42 + k33*k40 + k33*k41 + k33*k43 + 1,
+ k30*k40 + k30*k41 + k30*k43 + k31*k40 + k31*k41 + k31 + k32*k40 + k32*k43 + k32 + k33*k42 + k33*k43,
+ k30*k40 + k30*k41 + k30*k42 + k31*k40 + k31*k41 + k31*k43 + k32*k40 + k32*k41 + k32 + k33*k40 + k33*k43 + k33,
+ k30*k41 + k30*k42 + k30*k43 + k30 + k31*k40 + k31*k41 + k31*k42 + k32*k40 + k32*k41 + k32*k43 + k33*k40 + k33*k41 + k33,
+ k40*k50 + k40*k52 + k40*k53 + k41*k51 + k41*k52 + k41*k53 + k41 + k42*k50 + k42*k51 + k42*k52 + k43*k50 + k43*k51 + k43*k53 + k43 + 1,
+ k40*k50 + k40*k51 + k40*k53 + k40 + k41*k50 + k41*k51 + k41 + k42*k50 + k42*k53 + k42 + k43*k52 + k43*k53 + k43,
+ k40*k50 + k40*k51 + k40*k52 + k41*k50 + k41*k51 + k41*k53 + k41 + k42*k50 + k42*k51 + k42 + k43*k50 + k43*k53 + k43,
+ k40*k51 + k40*k52 + k40*k53 + k40 + k41*k50 + k41*k51 + k41*k52 + k42*k50 + k42*k51 + k42*k53 + k42 + k43*k50 + k43*k51 + k43,
+ k50*k60 + k50*k62 + k50*k63 + k51*k61 + k51*k62 + k51*k63 + k52*k60 + k52*k61 + k52*k62 + k53*k60 + k53*k61 + k53*k63 + 1,
+ k50*k60 + k50*k61 + k50*k63 + k51*k60 + k51*k61 + k52*k60 + k52*k63 + k53*k62 + k53*k63,
+ k50*k60 + k50*k61 + k50*k62 + k51*k60 + k51*k61 + k51*k63 + k52*k60 + k52*k61 + k53*k60 + k53*k63,
+ k50*k61 + k50*k62 + k50*k63 + k51*k60 + k51*k61 + k51*k62 + k52*k60 + k52*k61 + k52*k63 + k53*k60 + k53*k61,
+ k60*k70 + k60*k72 + k60*k73 + k60 + k61*k71 + k61*k72 + k61*k73 + k62*k70 + k62*k71 + k62*k72 + k62 + k63*k70 + k63*k71 + k63*k73 + 1,
+ k60*k70 + k60*k71 + k60*k73 + k61*k70 + k61*k71 + k61 + k62*k70 + k62*k73 + k62 + k63*k72 + k63*k73 + k63,
+ k60*k70 + k60*k71 + k60*k72 + k60 + k61*k70 + k61*k71 + k61*k73 + k62*k70 + k62*k71 + k62 + k63*k70 + k63*k73 + k63,
+ k60*k71 + k60*k72 + k60*k73 + k61*k70 + k61*k71 + k61*k72 + k61 + k62*k70 + k62*k71 + k62*k73 + k63*k70 + k63*k71 + k63,
+ k70*k80 + k70*k82 + k70*k83 + k70 + k71*k81 + k71*k82 + k71*k83 + k72*k80 + k72*k81 + k72*k82 + k73*k80 + k73*k81 + k73*k83 + 1,
+ k70*k80 + k70*k81 + k70*k83 + k71*k80 + k71*k81 + k71 + k72*k80 + k72*k83 + k73*k82 + k73*k83,
+ k70*k80 + k70*k81 + k70*k82 + k71*k80 + k71*k81 + k71*k83 + k72*k80 + k72*k81 + k72 + k73*k80 + k73*k83,
+ k70*k81 + k70*k82 + k70*k83 + k71*k80 + k71*k81 + k71*k82 + k72*k80 + k72*k81 + k72*k83 + k73*k80 + k73*k81 + k73,
+ k00*k10 + k00*k12 + k00*k13 + k00 + k01*k10 + k01*k11 + k01*k12 + k01 + k02*k10 + k02*k11 + k03*k12 + k03*k13 + k03,
+ k00*k10 + k00*k11 + k00*k13 + k01*k10 + k01*k13 + k02*k13 + k03*k10 + k03*k12,
+ k00*k10 + k00*k11 + k00*k12 + k00 + k01*k10 + k01*k11 + k02*k12 + k02*k13 + k03*k11 + k03*k13 + k03,
+ k00*k11 + k00*k12 + k00*k13 + k01*k10 + k01*k11 + k01*k13 + k02*k10 + k02*k13 + k02 + k03*k13 + k03,
+ k10*k20 + k10*k22 + k10*k23 + k11*k20 + k11*k21 + k11*k22 + k11 + k12*k20 + k12*k21 + k13*k22 + k13*k23 + k13,
+ k10*k20 + k10*k21 + k10*k23 + k11*k20 + k11*k23 + k11 + k12*k23 + k13*k20 + k13*k22 + k13,
+ k10*k20 + k10*k21 + k10*k22 + k10 + k11*k20 + k11*k21 + k12*k22 + k12*k23 + k13*k21 + k13*k23,
+ k10*k21 + k10*k22 + k10*k23 + k10 + k11*k20 + k11*k21 + k11*k23 + k12*k20 + k12*k23 + k13*k23 + k13,
+ k20*k30 + k20*k32 + k20*k33 + k20 + k21*k30 + k21*k31 + k21*k32 + k21 + k22*k30 + k22*k31 + k22 + k23*k32 + k23*k33,
+ k20*k30 + k20*k31 + k20*k33 + k20 + k21*k30 + k21*k33 + k21 + k22*k33 + k23*k30 + k23*k32,
+ k20*k30 + k20*k31 + k20*k32 + k20 + k21*k30 + k21*k31 + k21 + k22*k32 + k22*k33 + k22 + k23*k31 + k23*k33 + k23,
+ k20*k31 + k20*k32 + k20*k33 + k20 + k21*k30 + k21*k31 + k21*k33 + k21 + k22*k30 + k22*k33 + k23*k33 + k23,
+ k30*k40 + k30*k42 + k30*k43 + k30 + k31*k40 + k31*k41 + k31*k42 + k32*k40 + k32*k41 + k32 + k33*k42 + k33*k43,
+ k30*k40 + k30*k41 + k30*k43 + k31*k40 + k31*k43 + k32*k43 + k32 + k33*k40 + k33*k42 + k33,
+ k30*k40 + k30*k41 + k30*k42 + k31*k40 + k31*k41 + k31 + k32*k42 + k32*k43 + k32 + k33*k41 + k33*k43,
+ k30*k41 + k30*k42 + k30*k43 + k30 + k31*k40 + k31*k41 + k31*k43 + k32*k40 + k32*k43 + k32 + k33*k43,
+ k40*k50 + k40*k52 + k40*k53 + k40 + k41*k50 + k41*k51 + k41*k52 + k42*k50 + k42*k51 + k42 + k43*k52 + k43*k53 + k43,
+ k40*k50 + k40*k51 + k40*k53 + k40 + k41*k50 + k41*k53 + k42*k53 + k43*k50 + k43*k52,
+ k40*k50 + k40*k51 + k40*k52 + k41*k50 + k41*k51 + k41 + k42*k52 + k42*k53 + k43*k51 + k43*k53,
+ k40*k51 + k40*k52 + k40*k53 + k40 + k41*k50 + k41*k51 + k41*k53 + k41 + k42*k50 + k42*k53 + k42 + k43*k53 + k43,
+ k50*k60 + k50*k62 + k50*k63 + k50 + k51*k60 + k51*k61 + k51*k62 + k52*k60 + k52*k61 + k53*k62 + k53*k63,
+ k50*k60 + k50*k61 + k50*k63 + k51*k60 + k51*k63 + k51 + k52*k63 + k53*k60 + k53*k62,
+ k50*k60 + k50*k61 + k50*k62 + k51*k60 + k51*k61 + k52*k62 + k52*k63 + k52 + k53*k61 + k53*k63,
+ k50*k61 + k50*k62 + k50*k63 + k51*k60 + k51*k61 + k51*k63 + k52*k60 + k52*k63 + k53*k63 + k53,
+ k60*k70 + k60*k72 + k60*k73 + k61*k70 + k61*k71 + k61*k72 + k61 + k62*k70 + k62*k71 + k62 + k63*k72 + k63*k73 + k63,
+ k60*k70 + k60*k71 + k60*k73 + k61*k70 + k61*k73 + k62*k73 + k62 + k63*k70 + k63*k72,
+ k60*k70 + k60*k71 + k60*k72 + k60 + k61*k70 + k61*k71 + k61 + k62*k72 + k62*k73 + k63*k71 + k63*k73,
+ k60*k71 + k60*k72 + k60*k73 + k61*k70 + k61*k71 + k61*k73 + k62*k70 + k62*k73 + k62 + k63*k73,
+ k70*k80 + k70*k82 + k70*k83 + k71*k80 + k71*k81 + k71*k82 + k72*k80 + k72*k81 + k72 + k73*k82 + k73*k83,
+ k70*k80 + k70*k81 + k70*k83 + k71*k80 + k71*k83 + k71 + k72*k83 + k72 + k73*k80 + k73*k82,
+ k70*k80 + k70*k81 + k70*k82 + k71*k80 + k71*k81 + k71 + k72*k82 + k72*k83 + k72 + k73*k81 + k73*k83 + k73,
+ k70*k81 + k70*k82 + k70*k83 + k71*k80 + k71*k81 + k71*k83 + k72*k80 + k72*k83 + k73*k83,
+ k00*k11 + k00*k13 + k00 + k01*k11 + k01*k12 + k01*k13 + k02*k10 + k02*k12 + k03*k10 + k03*k11 + k03*k12 + k03 + k10 + k12 + k13,
+ k00*k10 + k00*k11 + k00*k12 + k00 + k01*k12 + k01 + k02*k10 + k02*k11 + k02*k13 + k03*k11 + k03 + k10 + k11 + k13,
+ k00*k10 + k00*k12 + k01*k10 + k01*k11 + k01*k12 + k01 + k02*k12 + k02 + k03*k10 + k03*k11 + k03*k13 + k10 + k11 + k12 + 1,
+ k00*k11 + k00*k12 + k00*k13 + k01*k10 + k01*k12 + k02*k10 + k02*k11 + k02*k12 + k02 + k03*k12 + k03 + k11 + k12 + k13,
+ k10*k21 + k10*k23 + k11*k21 + k11*k22 + k11*k23 + k11 + k12*k20 + k12*k22 + k12 + k13*k20 + k13*k21 + k13*k22 + k13 + k20 + k22 + k23 + 1,
+ k10*k20 + k10*k21 + k10*k22 + k10 + k11*k22 + k11 + k12*k20 + k12*k21 + k12*k23 + k13*k21 + k20 + k21 + k23,
+ k10*k20 + k10*k22 + k10 + k11*k20 + k11*k21 + k11*k22 + k11 + k12*k22 + k12 + k13*k20 + k13*k21 + k13*k23 + k20 + k21 + k22 + 1,
+ k10*k21 + k10*k22 + k10*k23 + k10 + k11*k20 + k11*k22 + k11 + k12*k20 + k12*k21 + k12*k22 + k12 + k13*k22 + k13 + k21 + k22 + k23 + 1,
+ k20*k31 + k20*k33 + k20 + k21*k31 + k21*k32 + k21*k33 + k21 + k22*k30 + k22*k32 + k23*k30 + k23*k31 + k23*k32 + k23 + k30 + k32 + k33,
+ k20*k30 + k20*k31 + k20*k32 + k20 + k21*k32 + k22*k30 + k22*k31 + k22*k33 + k22 + k23*k31 + k23 + k30 + k31 + k33 + 1,
+ k20*k30 + k20*k32 + k21*k30 + k21*k31 + k21*k32 + k21 + k22*k32 + k23*k30 + k23*k31 + k23*k33 + k23 + k30 + k31 + k32 + 1,
+ k20*k31 + k20*k32 + k20*k33 + k20 + k21*k30 + k21*k32 + k22*k30 + k22*k31 + k22*k32 + k22 + k23*k32 + k31 + k32 + k33 + 1,
+ k30*k41 + k30*k43 + k31*k41 + k31*k42 + k31*k43 + k31 + k32*k40 + k32*k42 + k32 + k33*k40 + k33*k41 + k33*k42 + k40 + k42 + k43,
+ k30*k40 + k30*k41 + k30*k42 + k31*k42 + k31 + k32*k40 + k32*k41 + k32*k43 + k33*k41 + k33 + k40 + k41 + k43,
+ k30*k40 + k30*k42 + k30 + k31*k40 + k31*k41 + k31*k42 + k32*k42 + k32 + k33*k40 + k33*k41 + k33*k43 + k40 + k41 + k42,
+ k30*k41 + k30*k42 + k30*k43 + k30 + k31*k40 + k31*k42 + k31 + k32*k40 + k32*k41 + k32*k42 + k33*k42 + k33 + k41 + k42 + k43 + 1,
+ k40*k51 + k40*k53 + k41*k51 + k41*k52 + k41*k53 + k41 + k42*k50 + k42*k52 + k43*k50 + k43*k51 + k43*k52 + k50 + k52 + k53,
+ k40*k50 + k40*k51 + k40*k52 + k41*k52 + k41 + k42*k50 + k42*k51 + k42*k53 + k42 + k43*k51 + k50 + k51 + k53 + 1,
+ k40*k50 + k40*k52 + k41*k50 + k41*k51 + k41*k52 + k42*k52 + k42 + k43*k50 + k43*k51 + k43*k53 + k43 + k50 + k51 + k52,
+ k40*k51 + k40*k52 + k40*k53 + k40 + k41*k50 + k41*k52 + k42*k50 + k42*k51 + k42*k52 + k43*k52 + k43 + k51 + k52 + k53 + 1,
+ k50*k61 + k50*k63 + k51*k61 + k51*k62 + k51*k63 + k52*k60 + k52*k62 + k53*k60 + k53*k61 + k53*k62 + k60 + k62 + k63,
+ k50*k60 + k50*k61 + k50*k62 + k51*k62 + k52*k60 + k52*k61 + k52*k63 + k53*k61 + k60 + k61 + k63,
+ k50*k60 + k50*k62 + k51*k60 + k51*k61 + k51*k62 + k52*k62 + k53*k60 + k53*k61 + k53*k63 + k60 + k61 + k62,
+ k50*k61 + k50*k62 + k50*k63 + k51*k60 + k51*k62 + k52*k60 + k52*k61 + k52*k62 + k53*k62 + k61 + k62 + k63,
+ k60*k71 + k60*k73 + k61*k71 + k61*k72 + k61*k73 + k62*k70 + k62*k72 + k63*k70 + k63*k71 + k63*k72 + k63 + k70 + k72 + k73 + 1,
+ k60*k70 + k60*k71 + k60*k72 + k60 + k61*k72 + k62*k70 + k62*k71 + k62*k73 + k63*k71 + k63 + k70 + k71 + k73,
+ k60*k70 + k60*k72 + k61*k70 + k61*k71 + k61*k72 + k61 + k62*k72 + k63*k70 + k63*k71 + k63*k73 + k70 + k71 + k72 + 1,
+ k60*k71 + k60*k72 + k60*k73 + k61*k70 + k61*k72 + k62*k70 + k62*k71 + k62*k72 + k62 + k63*k72 + k71 + k72 + k73,
+ k70*k81 + k70*k83 + k70 + k71*k81 + k71*k82 + k71*k83 + k72*k80 + k72*k82 + k73*k80 + k73*k81 + k73*k82 + k80 + k82 + k83 + 1,
+ k70*k80 + k70*k81 + k70*k82 + k71*k82 + k71 + k72*k80 + k72*k81 + k72*k83 + k73*k81 + k80 + k81 + k83,
+ k70*k80 + k70*k82 + k71*k80 + k71*k81 + k71*k82 + k72*k82 + k72 + k73*k80 + k73*k81 + k73*k83 + k80 + k81 + k82,
+ k70*k81 + k70*k82 + k70*k83 + k71*k80 + k71*k82 + k72*k80 + k72*k81 + k72*k82 + k73*k82 + k73 + k81 + k82 + k83] 
+       	
+Defining x0, x1, x2, x3, y0, y1, y2, y3, z0, z1, z2, z3, k00, k01, k02,
+k03, k10, k11, k12, k13, k20, k21, k22, k23, k30, k31, k32, k33, k40,
+k41, k42, k43, k50, k51, k52, k53, k60, k61, k62, k63, k70, k71, k72,
+k73, k80, k81, k82, k83, z00, z01, z02, z03, z10, z11, z12, z13, z20,
+z21, z22, z23, z30, z31, z32, z33, z40, z41, z42, z43, z50, z51, z52,
+z53, z60, z61, z62, z63
+def rank_of_echelon_form_matrix(B):
+    zero_list = [0]*B.dimensions()[1]
+    num_rows = B.dimensions()[0]
+    upper = 0
+    lower = num_rows
+    while(abs(lower-upper)!=1):
+        mean = floor((upper+lower)/2)
+        if B[mean] != vector(zero_list):
+            upper=  mean
+        else:
+            if B[mean+1] == vector(zero_list):
+                lower = mean
+    return max(lower,upper)
+    
+def matrix2equations_heuristic(I,nb): #returns a Gauss-reduced set of equations. 
+    I = Sequence(list(set(list(I))))
+    F = Sequence(I,P)
+    #print F
+    F = Sequence(list(set(list(F))))
+    A , v = F.coefficient_matrix();
+    del F
+    num_cols = int(v.dimensions()[0]);
+    const = A.column(num_cols-1);
+    C = A.delete_columns([num_cols-1])
+    # now reset('A') to free some memory!
+    del A
+    aug = C.augment(const)
+    # now reset('C') to free some memory!
+    del C
+    # the only matrix that you need is B
+    B = aug.echelon_form() 
+    rank_B = rank_of_echelon_form_matrix(B)
+    L = []
+    n = B.dimensions()[0]
+    m = B.dimensions()[1]
+    l = rank_B - 1
+    for i in [rank_B-l-1..rank_B-1]:
+        ### the following two lines return the first non zero elements of a list
+        myList = list(B[i])
+        index = next((i1 for i1, t in enumerate(myList) if t), None)
+        ####
+        L.append( sum(B[i][j]*(v[j])[0] for j in range(index,m)) )
+        del index
+        #del B
+    return L
+I = matrix2equations_heuristic(I,nb) 
+       	
+def monomialset(nb,D1,I,n,removelist,strategy):
+    monomials = []
+    #m = len(set.union(*[set(I[i].variables()) for i in range(len(I))])) # m number of variables appeared in the initial set
+    #n = len(I)       # n number of equations
+    I = Sequence(list(set(list(I))))                                                     
+    A1 = produce_initial_variables(n,4)
+    P = BooleanPolynomialRing ( names = A1, order='deglex' )
+    P.inject_variables()
+
+    F = Sequence(I,P)
+    #print F
+    
+    ##########################################################
+    ############### we generate the monomial set #############
+    
+    L1 = list(F.variables()+(1,))
+    print L1
+    if removelist==[]:
+        L3 = tuple(L1)
+    else:
+        for i in removelist:
+            L1.remove(i)
+        L3 = tuple(L1)
+    print L3,F.variables()+(1,)
+    
+    if strategy==0:
+        for element in itertools.combinations_with_replacement(L3,D1): 
+            monomials.append(prod(element))
+        monomials = list(set(monomials)) # in this line we delete repeated elements
+    if strategy==1:
+        1==1
+    
+    return monomials,F
+        
+        
+def xL(nb,D1,I,n,removelist,strategy):
+    start = time.time()
+    monomials,F = monomialset(nb,D1,I,n,removelist,strategy)
+    break1 = time.time()-start
+    start = time.time()
+    print "monomomias and F ok...",break1
+    print "now computing F2 sequence..."
+    F2 = Sequence(map(mul, cartesian_product_iterator((monomials, F)))) 
+    F2 = Sequence(list(set(list(F2))))
+    break2 = time.time()- start
+    print "computed",break2
+    start = time.time()
+    print "now computing coefficient matrix..."
+    A , v = F2.coefficient_matrix();
+    # TODO: can you avoid computing C fixing suitable the sequence F2?
+    del F2
+    num_cols = int(v.dimensions()[0]);
+    const = A.column(num_cols-1);
+    break3 = time.time()- start
+    print "computed",break3
+    #print "Creating augmented matrix and echelonize..."
+    #B = ((A.delete_columns([num_cols-1])).augment(const)).echelon_form() # we work with only one matrix A, so we use less memory
+    return A,v
+      
+## some auxiliary functions
+## here A,v are compatible with the previous function xL()
+def matrixtoequations(A,v):
+    n = A.dimensions()[0]
+    return flatten([[sum(list(A[j])[i]*list(v)[i] for i in range(len(list(v))))] for j in range(n)])
+    
+M = '1111'
+key='1110'  	
+
+#nunber of rounds : 8
+#subkeys: 
+
+#['1110', '0001', '1001', '1001', '0101', '1101', '0111', '0110', '1100']
+
+#zita: 
+
+#['1011', '1111', '0111', '0000', '1110', '0100', '0100', '0101'] 
+       	
+#### Solve system with XL Algorithm #### 
+removelist = [k02, k11, k12, k20, k21, k22, k23, k30, k31, k32, k40, k41, k42, k43, k50, k51, k52, k60, k61, k70, k80,k81,k82, z00, z01, z02, z11, z12, z20, z21, z22, z23, z30, z31, z32, z33, z40, z41]
+len(removelist)
+D1 = 4
+strategy=0
+start = time.time()
+A,v = xL(nb,D1,I,n,removelist,strategy) #! A is the matrix that you must Echelonize !#
+end = time.time()
+result = end-start
+print "time:",result 
+       	
+Defining x0, x1, x2, x3, y0, y1, y2, y3, z0, z1, z2, z3, k00, k01, k02,
+k03, k10, k11, k12, k13, k20, k21, k22, k23, k30, k31, k32, k33, k40,
+k41, k42, k43, k50, k51, k52, k53, k60, k61, k62, k63, k70, k71, k72,
+k73, k80, k81, k82, k83, z00, z01, z02, z03, z10, z11, z12, z13, z20,
+z21, z22, z23, z30, z31, z32, z33, z40, z41, z42, z43, z50, z51, z52,
+z53, z60, z61, z62, z63
+[z63, z62, z61, z60, z53, z52, z51, z50, z43, z42, z41, z40, z33, z32,
+z31, z30, z23, z22, z21, z20, z13, z12, z11, z10, z03, z02, z01, z00,
+k83, k82, k81, k80, k73, k72, k71, k70, k63, k62, k61, k60, k53, k52,
+k51, k50, k43, k42, k41, k40, k33, k32, k31, k30, k23, k22, k21, k20,
+k13, k12, k11, k10, k03, k02, k01, k00, 1]
+(z63, z62, z61, z60, z53, z52, z51, z50, z43, z42, z13, z10, z03, k83,
+k73, k72, k71, k63, k62, k53, k33, k13, k10, k03, k01, k00, 1) (z63,
+z62, z61, z60, z53, z52, z51, z50, z43, z42, z41, z40, z33, z32, z31,
+z30, z23, z22, z21, z20, z13, z12, z11, z10, z03, z02, z01, z00, k83,
+k82, k81, k80, k73, k72, k71, k70, k63, k62, k61, k60, k53, k52, k51,
+k50, k43, k42, k41, k40, k33, k32, k31, k30, k23, k22, k21, k20, k13,
+k12, k11, k10, k03, k02, k01, k00, 1)
+monomomias and F ok... 0.0886228084564
+now computing F2 sequence...
+computed 19.9493849277
+now computing coefficient matrix...
+computed 625.235589027
+time: 645.276341915
+ 
+       	
+# the idea is to save matrix A to a text (this may be a very large file)
+# and use it to apply Gaussian algorithm in C 
+       	
+### Ignore the following #### 
+       	
+### We define some functions to easily return the result of the XL algorithm
+# The following function return the minimum positive integer number N
+# such that all rows >=N are zero rows.
+  
+def search_bits(B):
+    zero_list = [0]*B.dimensions()[1]
+    num_rows = B.dimensions()[0]
+    upper = 0
+    lower = num_rows
+    while(abs(lower - upper)!=1):
+        mean = floor((upper+lower)/2)
+        if B[mean] != vector(zero_list):
+            upper = mean
+        else:
+            if B[mean+1] == vector(zero_list):
+                lower = mean
+    return max(lower,upper)
+            
+# B is the xl-matrix after Gauss
+# v is a vector column (corresponding to B) that coresponds to a specific monomials
+# The linear monomials are in the last entries of v
+# n is the number of variables
+
+def check_for_linear_polynomials(B,v,n,nb): 
+    j = 0
+    number_of_unknowns = nb*(n+1)+nb*(n-1) 
+    SB = search_bits(B)
+    vdim = v.dimensions()[0]
+    first_non_zero_row = B[SB-j]
+    n1 = list(first_non_zero_row).index(1) # find the first 1 in the first !=0 row of B and return its position
+    n2 = int(vdim-(nb*(n+1)+nb*(n-1)+1))   # before the column < n2 we do not get linear monomials
+    while  1==1:
+        
+        if n1 < n2 - 1: # then there is not any linear equation in B
+            print n1,n2
+            print "last j=",j-2
+            return 
+        else:
+            first_right_most_one = list(B[SB-j]).index(1)
+            B1 = matrix([B[SB-j][i] for i in range(first_right_most_one,vdim)])
+            B2 = matrix([v[i] for i in range(first_right_most_one,vdim)])
+            print B1 * B2 
+            j = j + 1            
+            n1 = first_right_most_one 
+       	
+check_for_linear_polynomials(B,v,n,nb) 
+       	
+[k72 + k80 + k81 + k82 + k83 + z51 + z52 + z61 + z62 + z63 + 1]
+[k71 + k73 + k81 + k82 + k83 + z50 + z52 + z60 + z61]
+[k70 + k73 + k80 + k81 + k82 + k83 + z50 + z51 + z52 + z62]
+[k63 + k80 + k82 + z53 + z60 + z61 + z62]
+[k62 + z52 + z60 + z63]
+[k61 + k80 + z51 + z62]
+[k60 + k73 + k83 + z50 + z53 + z61 + z62 + z63 + 1]
+[k52 + k73 + k80 + k82 + z40 + z41 + z50 + z52 + z53 + z60]
+[k51 + k53 + k81 + k82 + k83 + z40 + z41 + z51 + z53 + z60 + z62 + 1]
+[k50 + k53 + k73 + z51 + z52 + z53 + z61 + z62 + z63]
+[z62*z63 + k73 + k82 + k83 + z53 + z60 + z61 + z62 + 1]
+[z61*z63 + k73 + k80 + k83 + z53 + z62]
+2569744 2569746
+last j= 11
+                   
